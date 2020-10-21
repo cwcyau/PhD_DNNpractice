@@ -1,6 +1,6 @@
 ######################################
 
-# Logistic regression
+# 1. Logistic regression
 
 ######################################
 
@@ -32,11 +32,13 @@ class LogisticDNN(nn.Module):
         x = self.linear5(x)
         return x
 
-model = LogisticDNN()
+NNmodel = LogisticDNN()
 
-# define a loss function and optimizer
+DEmodel = LogisticDNN()
+
+# define a loss function and optimizers
 criterion = nn.MSELoss()
-optimizer = optim.SGD(model.parameters(), lr=0.001)
+NN_optimizer = optim.SGD(NNmodel.parameters(), lr=0.001)
 
 
 ######################################
@@ -95,24 +97,24 @@ for epoch in range(5):  # loop over the dataset multiple times
         labels = labels.view(1)
 
         # zero the parameter gradients
-        optimizer.zero_grad()
+        NN_optimizer.zero_grad()
         # Forward pass
-        outputs = model(inputs)
+        outputs = NNmodel(inputs)
         # Compute Loss
-        loss = criterion(outputs, labels)
+        NN_loss = criterion(outputs, labels)
         # Backward pass
-        loss.backward()
+        NN_loss.backward()
         # optimize
-        optimizer.step()
+        NN_optimizer.step()
 
-        # print statistics
+        #print statistics
         # running_loss += loss.item()
         # if i % 20 == 19:  # print every 20 mini-batches
-        #     print('[%d, %5d] loss: %.3f' %
-        #           (epoch + 1, i + 1, running_loss / 2000))
-        #     running_loss = 0.0
+        #      print('[%d, %5d] loss: %.3f' %
+        #            (epoch + 1, i + 1, running_loss / 2000))
+        #      running_loss = 0.0
 
-print('Finished Training')
+print('Finished training basic NN:')
 
 # make predictions
 correct = 0
@@ -123,7 +125,7 @@ with torch.no_grad():
         # reshape test data y
         labels = labels.view(1)
 
-        outputs = model(inputs)
+        outputs = NNmodel(inputs)
 
         predicted = torch.round(outputs)
         total += labels.size(0)
@@ -139,13 +141,79 @@ with torch.no_grad():
         # reshape test data y
         labels = labels.view(1)
 
-        outputs = model(inputs)
+        outputs = NNmodel(inputs)
 
         predicted = torch.round(outputs)
         total += labels.size(0)
         correct += (predicted == labels).sum().item()
 print('Accuracy of the 100 test numbers of linear separable dataset (NN): %d %%' % (
     100 * correct / total))
+
+##############################
+# Training an ensemble of 5 MLPs with MSE
+##############################
+de = []
+de_optimizers = []
+for _ in range(5):
+    de.append(DEmodel)
+    de_optimizers.append(torch.optim.SGD(params=DEmodel.parameters(), lr=0.001))
+# train
+for i, net in enumerate(de):
+    # print('Training network ',i+1)
+    for epoch in range(5):
+        for j, data in enumerate(zip(train_loader_x, train_loader_y)):
+            inputs, labels = data
+            # reshape train data y
+            labels = labels.view(1)
+
+            de_optimizers[i].zero_grad()
+            # reshape train data y
+            DE_loss = criterion(net(inputs), labels)
+
+            DE_loss.backward()
+
+            de_optimizers[i].step()
+
+    #         if epoch == 0 and j == 0:
+    #             print('initial loss: ', DE_loss.item())
+    # print('final loss: ', DE_loss.item())
+
+print('Finished training Deep ensembles:')
+
+# make predictions
+correct = 0
+total = 0
+with torch.no_grad():
+    for data in zip(train_loader_x,train_loader_y):
+        inputs, labels = data
+        # reshape test data y
+        labels = labels.view(1)
+
+        outputs = DEmodel(inputs)
+
+        predicted = torch.round(outputs)
+        total += labels.size(0)
+        correct += (predicted == labels).sum().item()
+print('Accuracy of the 100 train numbers of linear separable dataset (DE): %d %%' % (
+    100 * correct / total))
+
+correct = 0
+total = 0
+with torch.no_grad():
+    for data in zip(test_loader_x,test_loader_y):
+        inputs, labels = data
+        # reshape test data y
+        labels = labels.view(1)
+
+        outputs = DEmodel(inputs)
+
+        predicted = torch.round(outputs)
+        total += labels.size(0)
+        correct += (predicted == labels).sum().item()
+print('Accuracy of the 100 test numbers of linear separable dataset (DE): %d %%' % (
+    100 * correct / total))
+
+
 
 ######################################
 
@@ -212,15 +280,15 @@ for epoch in range(5):  # loop over the dataset multiple times
         labels = labels.view(1)
 
         # zero the parameter gradients
-        optimizer.zero_grad()
+        NN_optimizer.zero_grad()
         # Forward pass
-        outputs = model(inputs)
+        outputs = NNmodel(inputs)
         # Compute Loss
-        loss = criterion(outputs, labels)
+        NN_loss = criterion(outputs, labels)
         # Backward pass
-        loss.backward()
+        NN_loss.backward()
         # optimize
-        optimizer.step()
+        NN_optimizer.step()
 
         # print statistics
         # running_loss += loss.item()
@@ -229,7 +297,7 @@ for epoch in range(5):  # loop over the dataset multiple times
         #           (epoch + 1, i + 1, running_loss / 2000))
         #     running_loss = 0.0
 
-print('Finished Training')
+print('Finished training basic NN:')
 
 # make predictions
 correct = 0
@@ -240,7 +308,7 @@ with torch.no_grad():
         # reshape test data y
         labels = labels.view(1)
 
-        outputs = model(inputs)
+        outputs = NNmodel(inputs)
 
         predicted = torch.round(outputs)
         total += labels.size(0)
@@ -256,12 +324,76 @@ with torch.no_grad():
         # reshape test data y
         labels = labels.view(1)
 
-        outputs = model(inputs)
+        outputs = NNmodel(inputs)
 
         predicted = torch.round(outputs)
         total += labels.size(0)
         correct += (predicted == labels).sum().item()
 print('Accuracy of the 100 test numbers of linear non-separable dataset (NN): %d %%' % (
+    100 * correct / total))
+
+##############################
+# Training an ensemble of 5 MLPs with MSE
+##############################
+de = []
+de_optimizers = []
+for _ in range(5):
+    de.append(DEmodel)
+    de_optimizers.append(torch.optim.SGD(params=DEmodel.parameters(), lr=0.001))
+# train
+for i, net in enumerate(de):
+    # print('Training network ',i+1)
+    for epoch in range(5):
+        for j, data in enumerate(zip(train_loader_x, train_loader_y)):
+            inputs, labels = data
+            # reshape train data y
+            labels = labels.view(1)
+
+            de_optimizers[i].zero_grad()
+            # reshape train data y
+            DE_loss = criterion(net(inputs), labels)
+
+            DE_loss.backward()
+
+            de_optimizers[i].step()
+
+    #         if epoch == 0 and j == 0:
+    #             print('initial loss: ', DE_loss.item())
+    # print('final loss: ', DE_loss.item())
+
+print('Finished training Deep ensembles:')
+
+# make predictions
+correct = 0
+total = 0
+with torch.no_grad():
+    for data in zip(train_loader_x,train_loader_y):
+        inputs, labels = data
+        # reshape test data y
+        labels = labels.view(1)
+
+        outputs = DEmodel(inputs)
+
+        predicted = torch.round(outputs)
+        total += labels.size(0)
+        correct += (predicted == labels).sum().item()
+print('Accuracy of the 100 train numbers of linear non-separable dataset (DE): %d %%' % (
+    100 * correct / total))
+
+correct = 0
+total = 0
+with torch.no_grad():
+    for data in zip(test_loader_x,test_loader_y):
+        inputs, labels = data
+        # reshape test data y
+        labels = labels.view(1)
+
+        outputs = DEmodel(inputs)
+
+        predicted = torch.round(outputs)
+        total += labels.size(0)
+        correct += (predicted == labels).sum().item()
+print('Accuracy of the 100 test numbers of linear non-separable dataset (DE): %d %%' % (
     100 * correct / total))
 
 ######################################
@@ -332,15 +464,15 @@ for epoch in range(5):  # loop over the dataset multiple times
         labels = labels.view(1)
 
         # zero the parameter gradients
-        optimizer.zero_grad()
+        NN_optimizer.zero_grad()
         # Forward pass
-        outputs = model(inputs)
+        outputs = NNmodel(inputs)
         # Compute Loss
-        loss = criterion(outputs, labels)
+        NN_loss = criterion(outputs, labels)
         # Backward pass
-        loss.backward()
+        NN_loss.backward()
         # optimize
-        optimizer.step()
+        NN_optimizer.step()
 
         # print statistics
         # running_loss += loss.item()
@@ -349,7 +481,7 @@ for epoch in range(5):  # loop over the dataset multiple times
         #           (epoch + 1, i + 1, running_loss / 2000))
         #     running_loss = 0.0
 
-print('Finished Training')
+print('Finished training basic NN:')
 
 # make predictions
 correct = 0
@@ -360,7 +492,7 @@ with torch.no_grad():
         # reshape test data y
         labels = labels.view(1)
 
-        outputs = model(inputs)
+        outputs = NNmodel(inputs)
 
         predicted = torch.round(outputs)
         total += labels.size(0)
@@ -376,12 +508,76 @@ with torch.no_grad():
         # reshape test data y
         labels = labels.view(1)
 
-        outputs = model(inputs)
+        outputs = NNmodel(inputs)
 
         predicted = torch.round(outputs)
         total += labels.size(0)
         correct += (predicted == labels).sum().item()
 print('Accuracy of the 100 test numbers of non-linear separable dataset (NN): %d %%' % (
+    100 * correct / total))
+
+##############################
+# Training an ensemble of 5 MLPs with MSE
+##############################
+de = []
+de_optimizers = []
+for _ in range(5):
+    de.append(DEmodel)
+    de_optimizers.append(torch.optim.SGD(params=DEmodel.parameters(), lr=0.001))
+# train
+for i, net in enumerate(de):
+    # print('Training network ',i+1)
+    for epoch in range(5):
+        for j, data in enumerate(zip(train_loader_x, train_loader_y)):
+            inputs, labels = data
+            # reshape train data y
+            labels = labels.view(1)
+
+            de_optimizers[i].zero_grad()
+            # reshape train data y
+            DE_loss = criterion(net(inputs), labels)
+
+            DE_loss.backward()
+
+            de_optimizers[i].step()
+
+    #         if epoch == 0 and j == 0:
+    #             print('initial loss: ', DE_loss.item())
+    # print('final loss: ', DE_loss.item())
+
+print('Finished training Deep ensembles:')
+
+# make predictions
+correct = 0
+total = 0
+with torch.no_grad():
+    for data in zip(train_loader_x,train_loader_y):
+        inputs, labels = data
+        # reshape test data y
+        labels = labels.view(1)
+
+        outputs = DEmodel(inputs)
+
+        predicted = torch.round(outputs)
+        total += labels.size(0)
+        correct += (predicted == labels).sum().item()
+print('Accuracy of the 100 train numbers of non-linear separable dataset (DE): %d %%' % (
+    100 * correct / total))
+
+correct = 0
+total = 0
+with torch.no_grad():
+    for data in zip(test_loader_x,test_loader_y):
+        inputs, labels = data
+        # reshape test data y
+        labels = labels.view(1)
+
+        outputs = DEmodel(inputs)
+
+        predicted = torch.round(outputs)
+        total += labels.size(0)
+        correct += (predicted == labels).sum().item()
+print('Accuracy of the 100 test numbers of non-linear separable dataset (DE): %d %%' % (
     100 * correct / total))
 
 ######################################
@@ -454,15 +650,15 @@ for epoch in range(5):  # loop over the dataset multiple times
         labels = labels.view(1)
 
         # zero the parameter gradients
-        optimizer.zero_grad()
+        NN_optimizer.zero_grad()
         # Forward pass
-        outputs = model(inputs)
+        outputs = NNmodel(inputs)
         # Compute Loss
-        loss = criterion(outputs, labels)
+        NN_loss = criterion(outputs, labels)
         # Backward pass
-        loss.backward()
+        NN_loss.backward()
         # optimize
-        optimizer.step()
+        NN_optimizer.step()
 
         # print statistics
         # running_loss += loss.item()
@@ -471,7 +667,7 @@ for epoch in range(5):  # loop over the dataset multiple times
         #           (epoch + 1, i + 1, running_loss / 2000))
         #     running_loss = 0.0
 
-print('Finished Training')
+print('Finished training basic NN:')
 
 # make predictions
 correct = 0
@@ -482,7 +678,7 @@ with torch.no_grad():
         # reshape test data y
         labels = labels.view(1)
 
-        outputs = model(inputs)
+        outputs = NNmodel(inputs)
 
         predicted = torch.round(outputs)
         total += labels.size(0)
@@ -498,11 +694,75 @@ with torch.no_grad():
         # reshape test data y
         labels = labels.view(1)
 
-        outputs = model(inputs)
+        outputs = NNmodel(inputs)
 
         predicted = torch.round(outputs)
         total += labels.size(0)
         correct += (predicted == labels).sum().item()
 print('Accuracy of the 100 test numbers of non-linear non-separable dataset (NN): %d %%' % (
+    100 * correct / total))
+
+##############################
+# Training an ensemble of 5 MLPs with MSE
+##############################
+de = []
+de_optimizers = []
+for _ in range(5):
+    de.append(DEmodel)
+    de_optimizers.append(torch.optim.SGD(params=DEmodel.parameters(), lr=0.001))
+# train
+for i, net in enumerate(de):
+    # print('Training network ',i+1)
+    for epoch in range(5):
+        for j, data in enumerate(zip(train_loader_x, train_loader_y)):
+            inputs, labels = data
+            # reshape train data y
+            labels = labels.view(1)
+
+            de_optimizers[i].zero_grad()
+            # reshape train data y
+            DE_loss = criterion(net(inputs), labels)
+
+            DE_loss.backward()
+
+            de_optimizers[i].step()
+
+    #         if epoch == 0 and j == 0:
+    #             print('initial loss: ', DE_loss.item())
+    # print('final loss: ', DE_loss.item())
+
+print('Finished training Deep ensembles:')
+
+# make predictions
+correct = 0
+total = 0
+with torch.no_grad():
+    for data in zip(train_loader_x,train_loader_y):
+        inputs, labels = data
+        # reshape test data y
+        labels = labels.view(1)
+
+        outputs = DEmodel(inputs)
+
+        predicted = torch.round(outputs)
+        total += labels.size(0)
+        correct += (predicted == labels).sum().item()
+print('Accuracy of the 100 train numbers of non-linear non-separable dataset (DE): %d %%' % (
+    100 * correct / total))
+
+correct = 0
+total = 0
+with torch.no_grad():
+    for data in zip(test_loader_x,test_loader_y):
+        inputs, labels = data
+        # reshape test data y
+        labels = labels.view(1)
+
+        outputs = DEmodel(inputs)
+
+        predicted = torch.round(outputs)
+        total += labels.size(0)
+        correct += (predicted == labels).sum().item()
+print('Accuracy of the 100 test numbers of non-linear non-separable dataset (DE): %d %%' % (
     100 * correct / total))
 
