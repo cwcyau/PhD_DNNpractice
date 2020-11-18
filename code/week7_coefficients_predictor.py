@@ -112,7 +112,7 @@ X_simulated = np.random.normal(train_mean, train_std, size=(len(X_train), len(tr
 y_simulated = 1/(1 + np.exp(- (np.matmul(X_simulated,np.transpose(coef)) + inter)))
 
 # simulate y by p = simulated output
-y_round = np.random.binomial(1,y_simulated,size= len(y_simulated))
+y_round = np.random.binomial(1,y_simulated)
 
 
 
