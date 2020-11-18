@@ -110,10 +110,9 @@ X_simulated = np.random.normal(train_mean, train_std, size=(len(X_train), len(tr
 
 # calculate the output using simulated inputs and fitted coefficients
 y_simulated = 1/(1 + np.exp(- (np.matmul(X_simulated,np.transpose(coef)) + inter)))
-y_round = np.round(y_simulated)
 
-# logfit = LogisticRegression()
-# logreg.fit(X_train, y_train)
+# simulate y by p = simulated output
+y_round = np.random.binomial(1,y_simulated,size= len(y_simulated))
 
 
 
